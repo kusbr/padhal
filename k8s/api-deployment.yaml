@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: padhal-api
-          image: your-registry/padhal-api:latest
+          image: kumsub/padhal-api:replace-me
           imagePullPolicy: Always
           env:
             - name: REDIS_URL

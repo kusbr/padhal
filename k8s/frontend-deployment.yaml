@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: padhal-frontend
-          image: your-registry/padhal-frontend:latest
+          image: kumsub/padhal-frontend:replace-me
           imagePullPolicy: Always
           ports:
             - containerPort: 80

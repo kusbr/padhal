@@ -40,7 +40,6 @@ jobs:
         with:
           images: ${{ matrix.image_name }}
           tags: |
-            type=raw,value=latest
             type=sha,prefix=
 
       - name: Build and push image

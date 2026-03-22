@@ -1,16 +1,26 @@
-Build and push both images to a registry your cluster can reach, then update the image names in the manifests:
+The workflow publishes commit-SHA image tags to Docker Hub, not `latest`.
+
+Use a specific published tag in Compose or Kubernetes:
 
 ```bash
-docker build -f Dockerfile.api -t your-registry/padhal-api:latest .
-docker build -f Dockerfile.frontend -t your-registry/padhal-frontend:latest .
-docker push your-registry/padhal-api:latest
-docker push your-registry/padhal-frontend:latest
+kumsub/padhal-api:<git-sha>
+kumsub/padhal-frontend:<git-sha>
 ```
 
-Update:
+For Docker Compose:
+
+```bash
+export PADHAL_API_TAG=<git-sha>
+export PADHAL_FRONTEND_TAG=<git-sha>
+docker compose up
+```
+
+For Kubernetes, update:
 
 - `k8s/api-deployment.yaml`
 - `k8s/frontend-deployment.yaml`
+
+and replace `replace-me` with the exact published image tag.
 
 Apply everything with:
 
