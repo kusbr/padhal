@@ -1,0 +1,15 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /app
+
+COPY padhal.py /app/padhal.py
+COPY padhal_api.py /app/padhal_api.py
+COPY padhal_app /app/padhal_app
+COPY static /app/static
+
+EXPOSE 8000
+
+CMD ["python3", "padhal_api.py"]

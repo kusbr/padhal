@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: padhal-redis
+  namespace: padhal
+  labels:
+    app: padhal-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: padhal-redis
+  template:
+    metadata:
+      labels:
+        app: padhal-redis
+    spec:
+      containers:
+        - name: padhal-redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+              name: redis
+          readinessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi

@@ -1,0 +1,30 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: padhal-redis
+    ports:
+      - "6379:6379"
+
+  api:
+    image: padhal-api:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: padhal-api
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+
+  frontend:
+    image: padhal-frontend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: padhal-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api

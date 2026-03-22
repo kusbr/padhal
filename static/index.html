@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Padhal</title>
+    <style>
+      :root {
+        --bg: #f6f1e8;
+        --panel: #fffaf2;
+        --ink: #1e2a1f;
+        --muted: #6a7468;
+        --line: #d9cfbf;
+        --ok: #4f7d39;
+        --mid: #b08c2f;
+        --miss: #8e9388;
+        --accent: #b9492d;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Georgia, "Times New Roman", serif;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at top left, #fff4d8 0, transparent 30%),
+          radial-gradient(circle at bottom right, #e5efd8 0, transparent 35%),
+          var(--bg);
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 32px 20px 64px;
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2.4rem, 6vw, 4rem);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+      .brand-mark {
+        margin: 8px 0 18px;
+        color: var(--muted);
+        font-size: 1rem;
+        letter-spacing: 0.08em;
+      }
+      .lede {
+        margin: 0 0 24px;
+        color: var(--muted);
+        font-size: 1.05rem;
+      }
+      .panel {
+        background: color-mix(in srgb, var(--panel) 92%, white);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: 0 12px 30px rgba(30, 42, 31, 0.08);
+      }
+      .controls, .status-row {
+        display: grid;
+        gap: 12px;
+      }
+      .controls {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        margin-bottom: 16px;
+      }
+      label {
+        display: block;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-bottom: 6px;
+      }
+      input, select, button {
+        width: 100%;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        padding: 12px 14px;
+        font: inherit;
+      }
+      button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #2c5a57;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .status-row {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        margin-bottom: 18px;
+      }
+      .status-card {
+        padding: 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.55);
+      }
+      .status-card strong {
+        display: block;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        color: var(--muted);
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+      .board {
+        display: grid;
+        gap: 10px;
+        margin: 20px 0;
+        touch-action: manipulation;
+      }
+      .row {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .tile {
+        aspect-ratio: 1;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        display: grid;
+        place-items: center;
+        font-size: clamp(1.3rem, 4vw, 2rem);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        background: rgba(255,255,255,0.5);
+      }
+      .board-shell {
+        position: relative;
+      }
+      .tap-hint {
+        margin: 0 0 10px;
+        color: var(--muted);
+        font-size: 0.9rem;
+        text-align: center;
+      }
+      .mobile-input {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+        padding: 0;
+        margin: 0;
+        cursor: default;
+      }
+      .tile.correct { background: var(--ok); color: white; }
+      .tile.present { background: var(--mid); color: white; }
+      .tile.absent { background: var(--miss); color: white; }
+      .message {
+        display: none;
+      }
+      .meta {
+        margin-top: 16px;
+        color: var(--muted);
+      }
+      .disclaimer {
+        margin-top: 18px;
+        color: var(--muted);
+        font-size: 0.86rem;
+        line-height: 1.5;
+      }
+      .overlay {
+        position: fixed;
+        top: 24px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-16px);
+        min-width: min(420px, calc(100vw - 32px));
+        max-width: calc(100vw - 32px);
+        padding: 14px 18px;
+        border-radius: 14px;
+        background: rgba(30, 42, 31, 0.94);
+        color: #fffaf2;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 160ms ease, transform 160ms ease;
+        z-index: 20;
+      }
+      .overlay.visible {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+      .overlay.error {
+        background: rgba(126, 35, 24, 0.96);
+      }
+      @media (max-width: 640px) {
+        main {
+          padding: 20px 14px 40px;
+        }
+        .panel {
+          padding: 14px;
+          border-radius: 16px;
+        }
+        .board {
+          gap: 8px;
+          margin: 16px 0;
+        }
+        .row {
+          gap: 8px;
+        }
+        .tile {
+          border-radius: 12px;
+          font-size: clamp(1.1rem, 8vw, 1.8rem);
+        }
+        .overlay {
+          top: 12px;
+          min-width: calc(100vw - 20px);
+          max-width: calc(100vw - 20px);
+          padding: 12px 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="overlay" class="overlay" aria-live="polite"></div>
+    <main>
+      <h1>Padhal</h1>
+      <div class="brand-mark">पदल</div>
+
+      <section class="panel">
+        <p class="tap-hint">Tap the board and start typing. Press Enter to submit.</p>
+        <div class="board-shell">
+          <div id="board" class="board"></div>
+          <input
+            id="mobile-input"
+            class="mobile-input"
+            type="text"
+            inputmode="text"
+            autocapitalize="none"
+            autocomplete="off"
+            autocorrect="off"
+            spellcheck="false"
+            maxlength="5"
+            aria-label="Padhal input"
+          >
+        </div>
+
+        <p id="meta" class="meta"></p>
+        <p class="disclaimer">
+          Padhal is an unofficial word game. Word definitions and candidate words are provided by third-party APIs and may occasionally be unavailable or inconsistent.
+        </p>
+      </section>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+  </html>
