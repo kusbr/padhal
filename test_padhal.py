@@ -1,7 +1,11 @@
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+import sys
 from unittest.mock import patch
 from urllib.error import HTTPError, URLError
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "src"))
 
 import padhal
 from padhal_app.repositories import DatamuseRepository, DictionaryRepository

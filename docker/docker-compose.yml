@@ -6,8 +6,11 @@ services:
       - "6379:6379"
 
   api:
-    image: kumsub/padhal-api:${PADHAL_API_TAG:-replace-me}
-    pull_policy: always
+    image: padhal-api:local
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    pull_policy: never
     container_name: padhal-api
     environment:
       REDIS_URL: redis://redis:6379/0
@@ -17,8 +20,11 @@ services:
       - redis
 
   frontend:
-    image: kumsub/padhal-frontend:${PADHAL_FRONTEND_TAG:-replace-me}
-    pull_policy: always
+    image: padhal-frontend:local
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    pull_policy: never
     container_name: padhal-frontend
     ports:
       - "8080:80"

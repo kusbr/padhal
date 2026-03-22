@@ -17,9 +17,9 @@ jobs:
       matrix:
         include:
           - image_name: kumsub/padhal-api
-            dockerfile: Dockerfile.api
+            dockerfile: docker/Dockerfile.api
           - image_name: kumsub/padhal-frontend
-            dockerfile: Dockerfile.frontend
+            dockerfile: docker/Dockerfile.frontend
 
     steps:
       - name: Checkout repository

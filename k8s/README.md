@@ -12,7 +12,7 @@ For Docker Compose:
 ```bash
 export PADHAL_API_TAG=<git-sha>
 export PADHAL_FRONTEND_TAG=<git-sha>
-docker compose up
+docker compose -f docker/docker-compose.yml up
 ```
 
 For Kubernetes, update:

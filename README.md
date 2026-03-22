@@ -16,13 +16,13 @@ Padhal is an unofficial word game. Word definitions and candidate words are prov
 The backend is structured as a three-layer system:
 
 1. Frontend layer
-   - Static UI served from [static/index.html](/home/dev/learn/codex-cli/static/index.html) and [static/app.js](/home/dev/learn/codex-cli/static/app.js)
+   - Static UI served from [src/static/index.html](/home/dev/learn/codex-cli/src/static/index.html) and [src/static/app.js](/home/dev/learn/codex-cli/src/static/app.js)
 2. API layer
-   - HTTP server in [padhal_app/api.py](/home/dev/learn/codex-cli/padhal_app/api.py)
+   - HTTP server in [src/padhal_app/api.py](/home/dev/learn/codex-cli/src/padhal_app/api.py)
 3. Repository and service layer
-   - Domain rules: [padhal_app/domain.py](/home/dev/learn/codex-cli/padhal_app/domain.py)
-   - External API repositories: [padhal_app/repositories.py](/home/dev/learn/codex-cli/padhal_app/repositories.py)
-   - Game orchestration and storage: [padhal_app/services.py](/home/dev/learn/codex-cli/padhal_app/services.py)
+   - Domain rules: [src/padhal_app/domain.py](/home/dev/learn/codex-cli/src/padhal_app/domain.py)
+   - External API repositories: [src/padhal_app/repositories.py](/home/dev/learn/codex-cli/src/padhal_app/repositories.py)
+   - Game orchestration and storage: [src/padhal_app/services.py](/home/dev/learn/codex-cli/src/padhal_app/services.py)
 
 ## Run Locally
 
@@ -30,7 +30,7 @@ Start the API and frontend server together:
 
 ```bash
 cd /home/dev/learn/codex-cli
-python3 padhal_api.py
+python3 src/padhal_api.py
 ```
 
 Open:
@@ -42,7 +42,7 @@ http://127.0.0.1:8000
 Terminal version:
 
 ```bash
-python3 padhal.py
+python3 src/padhal.py
 ```
 
 ## Run With Docker Compose
@@ -53,7 +53,7 @@ This starts:
 - `padhal-redis`
 
 ```bash
-docker compose up --build
+docker compose -f docker/docker-compose.yml up --build
 ```
 
 Frontend:
@@ -75,8 +75,8 @@ Kubernetes manifests are under [k8s](/home/dev/learn/codex-cli/k8s).
 Build and push the images:
 
 ```bash
-docker build -f Dockerfile.api -t your-registry/padhal-api:latest .
-docker build -f Dockerfile.frontend -t your-registry/padhal-frontend:latest .
+docker build -f docker/Dockerfile.api -t your-registry/padhal-api:latest .
+docker build -f docker/Dockerfile.frontend -t your-registry/padhal-frontend:latest .
 docker push your-registry/padhal-api:latest
 docker push your-registry/padhal-frontend:latest
 ```
