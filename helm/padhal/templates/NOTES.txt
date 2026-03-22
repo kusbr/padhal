@@ -1,0 +1,12 @@
+1. Get the application URL by running these commands:
+{{- if .Values.ingress.enabled }}
+  kubectl get ingress {{ include "padhal.fullname" . }} -n {{ .Release.Namespace }}
+{{- else }}
+  kubectl get svc {{ include "padhal.frontendName" . }} -n {{ .Release.Namespace }}
+{{- end }}
+
+2. This chart defaults image tags to:
+   - `.Values.global.imageTag`
+   - otherwise `.Chart.AppVersion`
+
+3. In CI/CD, deploy with the commit SHA used to publish the Docker images.

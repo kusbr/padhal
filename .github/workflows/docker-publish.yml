@@ -50,3 +50,31 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  helm:
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Lint chart with commit SHA image tag
+        run: |
+          helm lint ./helm/padhal \
+            --set global.imageTag=${GITHUB_SHA}
+
+      - name: Package chart with commit SHA appVersion
+        run: |
+          mkdir -p dist
+          helm package ./helm/padhal \
+            --app-version "${GITHUB_SHA}" \
+            --destination dist
+
+      - name: Upload chart artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: padhal-helm-chart
+          path: dist/*.tgz

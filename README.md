@@ -93,6 +93,30 @@ kubectl apply -k k8s/
 
 The Kubernetes deployment includes Redis so API replicas can share game state.
 
+## Deploy With Helm
+
+A Helm chart is available under [helm/padhal](/home/dev/learn/codex-cli/helm/padhal).
+
+The GitHub Actions workflow packages this chart with:
+- `appVersion = <github.sha>`
+- Docker images already published with the same commit SHA tag
+
+The chart defaults image tags in this order:
+1. `.Values.api.image.tag` / `.Values.frontend.image.tag`
+2. `.Values.global.imageTag`
+3. `.Chart.AppVersion`
+
+That means the packaged chart artifact from CI will naturally use the commit SHA as the image tag.
+
+Example local install with an explicit tag:
+
+```bash
+helm upgrade --install padhal ./helm/padhal \
+  --namespace padhal \
+  --create-namespace \
+  --set global.imageTag=<git-sha>
+```
+
 ## API Endpoints
 
 - `POST /api/games`

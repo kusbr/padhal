@@ -1,0 +1,6 @@
+apiVersion: v2
+name: padhal
+description: Helm chart for Padhal frontend, API, and Redis
+type: application
+version: 0.1.0
+appVersion: "replace-me"

@@ -33,3 +33,18 @@ This setup deploys Redis alongside the API so game state is shared across API re
 This setup expects an Ingress controller in the cluster. The frontend is served at `/` and the API is routed at `/api`.
 
 If your cluster does not have Ingress, expose the frontend and API separately with `LoadBalancer` or `NodePort` services and adjust the frontend API base URL accordingly.
+
+## Helm
+
+A Helm chart is available in `helm/padhal`.
+
+The GitHub Actions workflow packages the chart with `appVersion` set to the current commit SHA. The chart templates default image tags to `.Chart.AppVersion` when no explicit values override is provided.
+
+Deploy with a specific SHA:
+
+```bash
+helm upgrade --install padhal ./helm/padhal \
+  --namespace padhal \
+  --create-namespace \
+  --set global.imageTag=<git-sha>
+```
