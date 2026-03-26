@@ -1,0 +1,192 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.41.2.15936",
+      "templateHash": "14374048702180930752"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for all resources."
+      }
+    },
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "padhal",
+      "metadata": {
+        "description": "Prefix used for resource naming."
+      }
+    },
+    "logAnalyticsWorkspaceName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-law', parameters('namePrefix'))]",
+      "metadata": {
+        "description": "Log Analytics workspace name."
+      }
+    },
+    "containerAppsEnvironmentName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-env', parameters('namePrefix'))]",
+      "metadata": {
+        "description": "Container Apps managed environment name."
+      }
+    },
+    "containerAppName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-app', parameters('namePrefix'))]",
+      "metadata": {
+        "description": "Container App name."
+      }
+    },
+    "apiImage": {
+      "type": "string",
+      "defaultValue": "kumsub/padhal-api:replace-me",
+      "metadata": {
+        "description": "Padhal API image. Use a real published tag, not replace-me."
+      }
+    },
+    "frontendImage": {
+      "type": "string",
+      "defaultValue": "kumsub/padhal-frontend:replace-me",
+      "metadata": {
+        "description": "Padhal frontend image. Use a real published tag, not replace-me."
+      }
+    },
+    "redisImage": {
+      "type": "string",
+      "defaultValue": "redis:7-alpine",
+      "metadata": {
+        "description": "Redis container image."
+      }
+    },
+    "ingressExternal": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Expose the app publicly on HTTPS."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "retentionInDays": 30,
+        "features": {
+          "searchVersion": 1,
+          "legacy": 0,
+          "enableLogAccessUsingOnlyResourcePermissions": true
+        },
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('containerAppsEnvironmentName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2023-09-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName')), '2023-09-01').primarySharedKey]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[parameters('containerAppName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppsEnvironmentName'))]",
+        "configuration": {
+          "ingress": {
+            "external": "[parameters('ingressExternal')]",
+            "allowInsecure": false,
+            "targetPort": 8000,
+            "transport": "auto",
+            "traffic": [
+              {
+                "latestRevision": true,
+                "weight": 100
+              }
+            ]
+          }
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "api",
+              "image": "[parameters('apiImage')]",
+              "env": [
+                {
+                  "name": "REDIS_URL",
+                  "value": "redis://localhost:6379/0"
+                }
+              ],
+              "resources": {
+                "cpu": "[json('0.5')]",
+                "memory": "1Gi"
+              }
+            },
+            {
+              "name": "frontend",
+              "image": "[parameters('frontendImage')]",
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              }
+            },
+            {
+              "name": "redis",
+              "image": "[parameters('redisImage')]",
+              "command": [
+                "redis-server"
+              ],
+              "args": [
+                "--save",
+                "",
+                "--appendonly",
+                "no"
+              ],
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              }
+            }
+          ],
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 1
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppsEnvironmentName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName')), '2024-03-01').configuration.ingress.fqdn)]"
+    }
+  }
+}
