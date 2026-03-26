@@ -24,6 +24,24 @@ param acrLoginServer string = '${acrName}.azurecr.io'
 @description('User-assigned managed identity name for Container App.')
 param userAssignedIdentityName string = '${namePrefix}-uai'
 
+@description('Federated credential name used for GitHub Actions OIDC.')
+param githubFederatedCredentialName string = 'github-main'
+
+@description('GitHub repository owner (org or user).')
+param githubRepoOwner string = 'kusbr'
+
+@description('GitHub repository name.')
+param githubRepoName string = 'padhal'
+
+@description('GitHub branch used by the workflow subject claim.')
+param githubRepoBranch string = 'main'
+
+@description('OIDC issuer URL for GitHub Actions.')
+param githubOidcIssuer string = 'https://token.actions.githubusercontent.com'
+
+@description('OIDC audience for Azure workload identity federation.')
+param githubOidcAudience string = 'api://AzureADTokenExchange'
+
 @description('Padhal API image from ACR.')
 param apiImage string = '${acrLoginServer}/padhal-api:latest'
 
@@ -75,6 +93,18 @@ resource containerAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
   location: location
 }
 
+resource githubFederatedCredential 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2023-01-31-preview' = {
+  name: githubFederatedCredentialName
+  parent: containerAppIdentity
+  properties: {
+    issuer: githubOidcIssuer
+    subject: 'repo:${githubRepoOwner}/${githubRepoName}:ref:refs/heads/${githubRepoBranch}'
+    audiences: [
+      githubOidcAudience
+    ]
+  }
+}
+
 resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(acr.id, containerAppIdentity.id, 'AcrPull')
   scope: acr
@@ -82,6 +112,19 @@ resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-
     roleDefinitionId: subscriptionResourceId(
       'Microsoft.Authorization/roleDefinitions',
       '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+    )
+    principalId: containerAppIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource acrPushRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, containerAppIdentity.id, 'AcrPush')
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '8311e382-0749-4cb8-b61a-304f252e45ec'
     )
     principalId: containerAppIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -169,6 +212,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   }
   dependsOn: [
     acrPullRoleAssignment
+    acrPushRoleAssignment
   ]
 }
 

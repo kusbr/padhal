@@ -14,6 +14,18 @@
     "acrLoginServer": {
       "value": "padhalacr.azurecr.io"
     },
+    "githubFederatedCredentialName": {
+      "value": "github-main"
+    },
+    "githubRepoOwner": {
+      "value": "kusbr"
+    },
+    "githubRepoName": {
+      "value": "padhal"
+    },
+    "githubRepoBranch": {
+      "value": "main"
+    },
     "apiImage": {
       "value": "padhalacr.azurecr.io/padhal-api:latest"
     },

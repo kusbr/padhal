@@ -3,7 +3,8 @@
 This deployment creates:
 
 - 1 Log Analytics workspace
-- 1 User-assigned managed identity (for ACR pull)
+- 1 User-assigned managed identity
+- 1 GitHub OIDC federated credential on that identity
 - 1 Container Apps managed environment
 - 1 Azure Container App with 3 containers:
 1. `api` (`0.5 CPU`, `1Gi`)
@@ -59,5 +60,6 @@ az containerapp show \
 ## Notes
 
 - Container App uses a user-assigned managed identity with `AcrPull` role on ACR.
+- Template also grants `AcrPush` and configures GitHub OIDC federated credential (`repo:<owner>/<repo>:ref:refs/heads/<branch>`) for CI image publishing without client secrets.
 - Default images point to `:latest` tags in ACR.
 - Redis is in-app for simplicity. For production, prefer Azure Cache for Redis.
