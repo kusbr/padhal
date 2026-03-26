@@ -5,6 +5,7 @@ import os
 import random
 import uuid
 from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 from threading import RLock
 from urllib.error import HTTPError, URLError
 
@@ -20,14 +21,29 @@ except ImportError:  # pragma: no cover - optional dependency in local test runs
 class InMemoryGameStore:
     def __init__(self) -> None:
         self.games: dict[str, PadhalGame] = {}
+        self._target_last_used_at: dict[str, datetime] = {}
         self._game_locks: dict[str, RLock] = {}
         self._lock = RLock()
 
     def save(self, game: PadhalGame) -> PadhalGame:
         with self._lock:
             self.games[game.game_id] = game
+            self._target_last_used_at[game.target] = datetime.now(timezone.utc)
             self._game_locks.setdefault(game.game_id, RLock())
         return game
+
+    def get_recently_used_targets(self, block_window: timedelta, now: datetime) -> set[str]:
+        cutoff = now - block_window
+        with self._lock:
+            return {
+                target
+                for target, last_used_at in self._target_last_used_at.items()
+                if last_used_at >= cutoff
+            }
+
+    def reset_target_usage_window(self) -> None:
+        with self._lock:
+            self._target_last_used_at.clear()
 
     def get(self, game_id: str) -> PadhalGame:
         with self._lock:
@@ -63,9 +79,22 @@ class RedisGameStore:
     def _lock_key(self, game_id: str) -> str:
         return f"{self.key_prefix}:lock:{game_id}"
 
+    def _used_targets_key(self) -> str:
+        return f"{self.key_prefix}:used_targets_by_time"
+
     def save(self, game: PadhalGame) -> PadhalGame:
+        now_ts = datetime.now(timezone.utc).timestamp()
         self.client.set(self._game_key(game.game_id), json.dumps(game.to_storage_dict()))
+        self.client.zadd(self._used_targets_key(), {game.target: now_ts})
         return game
+
+    def get_recently_used_targets(self, block_window: timedelta, now: datetime) -> set[str]:
+        cutoff_ts = (now - block_window).timestamp()
+        used_targets = self.client.zrangebyscore(self._used_targets_key(), cutoff_ts, "+inf")
+        return {str(target) for target in used_targets}
+
+    def reset_target_usage_window(self) -> None:
+        self.client.delete(self._used_targets_key())
 
     def get(self, game_id: str) -> PadhalGame:
         payload = self.client.get(self._game_key(game_id))
@@ -96,6 +125,8 @@ def build_game_store() -> InMemoryGameStore | RedisGameStore:
 
 
 class PadhalService:
+    TARGET_REUSE_BLOCK_WINDOW = timedelta(days=30)
+
     def __init__(
         self,
         dictionary_repository: DictionaryRepository | None = None,
@@ -150,6 +181,12 @@ class PadhalService:
         starts_with: str | None = None,
         part_of_speech: str | None = None,
     ) -> tuple[str, str]:
+        now = self._utc_now()
+        used_targets = self.game_store.get_recently_used_targets(
+            self.TARGET_REUSE_BLOCK_WINDOW,
+            now,
+        )
+
         try:
             candidates = self.datamuse_repository.list_candidate_words(
                 starts_with=starts_with,
@@ -162,7 +199,12 @@ class PadhalService:
         if not candidates:
             raise RuntimeError("The API returned no usable 5-letter candidates.")
 
-        for candidate in candidates:
+        available_candidates = [candidate for candidate in candidates if candidate not in used_targets]
+        if not available_candidates:
+            self.game_store.reset_target_usage_window()
+            available_candidates = candidates
+
+        for candidate in available_candidates:
             try:
                 if self.dictionary_repository.request_entries(candidate):
                     self.dictionary_repository.word_validity_cache[candidate] = True
@@ -175,3 +217,6 @@ class PadhalService:
                 raise RuntimeError(f"Unable to validate API candidate '{candidate}': {exc}") from exc
 
         raise RuntimeError("The API candidates were fetched, but none validated as dictionary words.")
+
+    def _utc_now(self) -> datetime:
+        return datetime.now(timezone.utc)

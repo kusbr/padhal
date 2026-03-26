@@ -13,6 +13,7 @@ const boardEl = document.getElementById("board");
 const metaEl = document.getElementById("meta");
 const overlayEl = document.getElementById("overlay");
 const mobileInputEl = document.getElementById("mobile-input");
+const newGameLinkEl = document.getElementById("new-game-link");
 
 function showOverlay(text, isError = true) {
   if (!text) {
@@ -212,6 +213,10 @@ boardEl.addEventListener("click", () => {
   if (state.game && state.game.status === "in_progress") {
     mobileInputEl.focus();
   }
+});
+
+newGameLinkEl.addEventListener("click", () => {
+  createGame();
 });
 
 async function loadSessionGame() {

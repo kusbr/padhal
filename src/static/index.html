@@ -150,6 +150,12 @@
         padding: 0;
         margin: 0;
         cursor: default;
+        color: transparent;
+        caret-color: transparent;
+        background: transparent;
+      }
+      .mobile-input:focus {
+        outline: none;
       }
       .tile.correct { background: var(--ok); color: white; }
       .tile.present { background: var(--mid); color: white; }
@@ -160,6 +166,24 @@
       .meta {
         margin-top: 16px;
         color: var(--muted);
+      }
+      .game-actions {
+        margin-top: 14px;
+      }
+      .new-game-link {
+        display: inline-block;
+        border: none;
+        background: transparent;
+        color: var(--accent);
+        text-decoration: underline;
+        text-underline-offset: 3px;
+        padding: 0;
+        width: auto;
+        cursor: pointer;
+        font-size: 0.98rem;
+      }
+      .new-game-link:hover {
+        color: #923923;
       }
       .disclaimer {
         margin-top: 18px;
@@ -245,8 +269,11 @@
         </div>
 
         <p id="meta" class="meta"></p>
+        <div class="game-actions">
+          <button id="new-game-link" class="new-game-link" type="button">Start a new game</button>
+        </div>
         <p class="disclaimer">
-          Padhal is an unofficial word game. Word definitions and candidate words are provided by third-party APIs and may occasionally be unavailable or inconsistent.
+          Padhal is an unofficial Wordle-style copy made just for fun, and its name is derived from Sanskrit <code>padam</code> + Wordle. Word definitions and candidate words are provided by third-party APIs and may occasionally be unavailable or inconsistent.
         </p>
       </section>
     </main>

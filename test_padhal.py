@@ -1,5 +1,6 @@
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
 from pathlib import Path
 import sys
 from unittest.mock import patch
@@ -115,6 +116,70 @@ class ServiceTests(unittest.TestCase):
         with patch.object(service.datamuse_repository, "list_candidate_words", side_effect=URLError("offline")):
             with self.assertRaises(RuntimeError):
                 service.create_game()
+
+    def test_create_game_does_not_reuse_selected_target(self) -> None:
+        dictionary_repository = DictionaryRepository()
+        datamuse_repository = DatamuseRepository()
+        game_store = InMemoryGameStore()
+        service = PadhalService(dictionary_repository, datamuse_repository, game_store)
+
+        with patch.object(
+            datamuse_repository,
+            "list_candidate_words",
+            return_value=["crane", "slate"],
+        ), patch.object(
+            dictionary_repository,
+            "request_entries",
+            side_effect=[[{"word": "crane"}], [{"word": "slate"}]],
+        ), patch("padhal_app.services.random.shuffle", side_effect=lambda items: None):
+            first_game = service.create_game()
+            second_game = service.create_game()
+
+        self.assertNotEqual(first_game.target, second_game.target)
+        self.assertEqual({first_game.target, second_game.target}, {"crane", "slate"})
+
+    def test_create_game_allows_reuse_after_reuse_window(self) -> None:
+        dictionary_repository = DictionaryRepository()
+        datamuse_repository = DatamuseRepository()
+        game_store = InMemoryGameStore()
+        service = PadhalService(dictionary_repository, datamuse_repository, game_store)
+
+        with patch.object(
+            datamuse_repository,
+            "list_candidate_words",
+            return_value=["crane"],
+        ), patch.object(
+            dictionary_repository,
+            "request_entries",
+            return_value=[{"word": "crane"}],
+        ), patch("padhal_app.services.random.shuffle", side_effect=lambda items: None):
+            first_game = service.create_game()
+            game_store._target_last_used_at["crane"] = service._utc_now() - timedelta(days=31)
+            second_game = service.create_game()
+
+        self.assertEqual(first_game.target, "crane")
+        self.assertEqual(second_game.target, "crane")
+
+    def test_create_game_resets_window_when_all_candidates_are_used(self) -> None:
+        dictionary_repository = DictionaryRepository()
+        datamuse_repository = DatamuseRepository()
+        game_store = InMemoryGameStore()
+        service = PadhalService(dictionary_repository, datamuse_repository, game_store)
+
+        with patch.object(
+            datamuse_repository,
+            "list_candidate_words",
+            return_value=["crane"],
+        ), patch.object(
+            dictionary_repository,
+            "request_entries",
+            return_value=[{"word": "crane"}],
+        ), patch("padhal_app.services.random.shuffle", side_effect=lambda items: None):
+            first_game = service.create_game()
+            second_game = service.create_game()
+
+        self.assertEqual(first_game.target, "crane")
+        self.assertEqual(second_game.target, "crane")
 
     def test_submit_guess_records_progress(self) -> None:
         dictionary_repository = DictionaryRepository()
