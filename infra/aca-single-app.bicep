@@ -15,17 +15,30 @@ param containerAppsEnvironmentName string = '${namePrefix}-env'
 @description('Container App name.')
 param containerAppName string = '${namePrefix}-app'
 
-@description('Padhal API image. Use a real published tag, not replace-me.')
-param apiImage string = 'kumsub/padhal-api:replace-me'
+@description('Container Registry name used by the Container App.')
+param acrName string = '${toLower(namePrefix)}acr'
 
-@description('Padhal frontend image. Use a real published tag, not replace-me.')
-param frontendImage string = 'kumsub/padhal-frontend:replace-me'
+@description('Container Registry login server.')
+param acrLoginServer string = '${acrName}.azurecr.io'
+
+@description('User-assigned managed identity name for Container App.')
+param userAssignedIdentityName string = '${namePrefix}-uai'
+
+@description('Padhal API image from ACR.')
+param apiImage string = '${acrLoginServer}/padhal-api:latest'
+
+@description('Padhal frontend image from ACR.')
+param frontendImage string = '${acrLoginServer}/padhal-frontend:latest'
 
 @description('Redis container image.')
 param redisImage string = 'redis:7-alpine'
 
 @description('Expose the app publicly on HTTPS.')
 param ingressExternal bool = true
+
+resource acr 'Microsoft.ContainerRegistry/registries@2023-07-01' existing = {
+  name: acrName
+}
 
 resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsWorkspaceName
@@ -57,12 +70,42 @@ resource containerAppsEnvironment 'Microsoft.App/managedEnvironments@2024-03-01'
   }
 }
 
+resource containerAppIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: userAssignedIdentityName
+  location: location
+}
+
+resource acrPullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acr.id, containerAppIdentity.id, 'AcrPull')
+  scope: acr
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+    )
+    principalId: containerAppIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: containerAppName
   location: location
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${containerAppIdentity.id}': {}
+    }
+  }
   properties: {
     managedEnvironmentId: containerAppsEnvironment.id
     configuration: {
+      registries: [
+        {
+          server: acrLoginServer
+          identity: containerAppIdentity.id
+        }
+      ]
       ingress: {
         external: ingressExternal
         allowInsecure: false
@@ -124,6 +167,9 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
       }
     }
   }
+  dependsOn: [
+    acrPullRoleAssignment
+  ]
 }
 
 output containerAppUrl string = 'https://${containerApp.properties.configuration.ingress.fqdn}'

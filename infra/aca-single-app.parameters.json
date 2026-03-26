@@ -8,11 +8,17 @@
     "namePrefix": {
       "value": "padhal"
     },
+    "acrName": {
+      "value": "padhalacr"
+    },
+    "acrLoginServer": {
+      "value": "padhalacr.azurecr.io"
+    },
     "apiImage": {
-      "value": "kumsub/padhal-api:latest"
+      "value": "padhalacr.azurecr.io/padhal-api:latest"
     },
     "frontendImage": {
-      "value": "kumsub/padhal-frontend:latest"
+      "value": "padhalacr.azurecr.io/padhal-frontend:latest"
     },
     "redisImage": {
       "value": "redis:7-alpine"

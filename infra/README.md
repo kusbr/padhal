@@ -3,6 +3,7 @@
 This deployment creates:
 
 - 1 Log Analytics workspace
+- 1 User-assigned managed identity (for ACR pull)
 - 1 Container Apps managed environment
 - 1 Azure Container App with 3 containers:
 1. `api` (`0.5 CPU`, `1Gi`)
@@ -20,13 +21,23 @@ To keep `/api/*` and gameplay working without extra reverse-proxy config, this t
 
 - Azure CLI logged in: `az login`
 - Existing resource group in `southindia` (or change location in params)
-- Published images for:
-1. `kumsub/padhal-api:<tag>`
-2. `kumsub/padhal-frontend:<tag>`
+- Deploy Azure Container Registry first (same resource group)
+- ACR has images:
+1. `<acr-login-server>/padhal-api:latest`
+2. `<acr-login-server>/padhal-frontend:latest`
 
 ## Deploy
 
-Update image tags in [aca-single-app.parameters.json](/home/dev/learn/codex-cli/infra/aca-single-app.parameters.json), then run:
+1. Create ACR in the same resource group:
+
+```bash
+az deployment group create \
+  --resource-group <your-rg> \
+  --template-file infra/container-registry.bicep \
+  --parameters namePrefix=padhal acrName=<globally-unique-acr-name>
+```
+
+2. Update ACR values in [aca-single-app.parameters.json](/home/dev/learn/codex-cli/infra/aca-single-app.parameters.json), then deploy Container App:
 
 ```bash
 az deployment group create \
@@ -47,5 +58,6 @@ az containerapp show \
 
 ## Notes
 
-- Do not keep `replace-me` image tags; deployment will succeed but app startup will fail if images are missing.
+- Container App uses a user-assigned managed identity with `AcrPull` role on ACR.
+- Default images point to `:latest` tags in ACR.
 - Redis is in-app for simplicity. For production, prefer Azure Cache for Redis.
